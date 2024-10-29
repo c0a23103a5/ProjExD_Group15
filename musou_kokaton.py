@@ -1,3 +1,4 @@
+
 import math
 import os
 import random
@@ -220,7 +221,36 @@ class Enemy(pg.sprite.Sprite):
         if self.rect.centery > self.bound:
             self.vy = 0
             self.state = "stop"
-        self.rect.move_ip(vx, vy)
+        self.rect.move_ip(self.vx, self.vy)
+
+
+class HealItem(pg.sprite.Sprite):
+    """
+    回復アイテムに関するクラス
+    """
+    def __init__(self):
+        """
+        回復アイテムをランダムなx座標の画面上端に生成する
+        大きさと回復量と落下速度が比例していて、その値はランダムで決まる（5段階）
+        """
+        super().__init__()
+        self.random_num = random.randint(1, 5)
+        self.heal_num = self.random_num*10
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/0.png"), 0, 0.5+(self.random_num/10))
+        self.rect = self.image.get_rect()
+        self.rect.center = random.randint(0, WIDTH), 0
+        self.vx, self.vy = 0, 1 + self.random_num/2
+
+    def update(self):
+        """
+        回復アイテムを速度ベクトルself.vyに基づき反転させながら落下させる
+        画面端に到達したらself.kill()でインスタンスを削除する
+        """
+        if self.rect.centery/10%2 == 0:
+            self.image = pg.transform.flip(self.image, True, False)
+        if self.rect.centery > HEIGHT:
+            self.kill()
+        self.rect.move_ip(self.vx, self.vy)
 
 
 class Score:
@@ -253,6 +283,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    healitems = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -267,6 +298,11 @@ def main():
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
+
+        if tmr%100 == 0:  # 100フレームに一回乱数を発生させる
+            r_num = random.randint(1, 5)
+            if r_num == 1:  # 1/5の確率でアイテムを出現させる
+                healitems.add(HealItem())
 
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
@@ -288,6 +324,12 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        
+        # アイテムとこうかとんとの衝突判定
+        elif len(pg.sprite.spritecollide(bird, healitems, True)) != 0:
+            bird.change_img(6, screen)  # こうかとん喜びエフェクト 
+            pg.display.update()
+            time.sleep(0.2)  # 0.2秒停止
 
         bird.update(key_lst, screen)
         beams.update()
@@ -298,6 +340,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        healitems.update()  # 回復アイテムの位置更新
+        healitems.draw(screen)  # 回復アイテムの描画
         score.update(screen)
         pg.display.update()
         tmr += 1
