@@ -252,6 +252,16 @@ class HealItem(pg.sprite.Sprite):
             self.kill()
         self.rect.move_ip(self.vx, self.vy)
 
+    def heal(self, bird: Bird):
+        """
+        Birdクラスのhpを回復量分回復する関数
+        """
+        mx_hp = 100
+        if (self.heal_num+bird.hp) <= mx_hp:
+            bird.hp += self.heal_num
+        else:
+            bird.hp = mx_hp
+
 
 class Score:
     """
